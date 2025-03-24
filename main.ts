@@ -67,6 +67,12 @@ export default class NoteLockerPlugin extends Plugin {
 		await this.saveSettings();
 
 		const file = this.app.vault.getAbstractFileByPath(notePath);
+
+		if (!file) {
+			new Notice("Error: Note not found");
+			return;
+		}
+
 		const fileName = file instanceof TFile ? file.basename :
 			notePath.split('/').pop()?.replace(/\..+$/, '') || notePath;
 		const displayName = this.truncateFileName(fileName);
