@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "note-locker",
+	"name": "Note Locker",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Note Locker allows you to \"lock\" a note so that it opens in preview mode by default",
+	"author": "Felvesthe",
+	"authorUrl": "https://github.com/Felvesthe",
 	"isDesktopOnly": false
 }
