@@ -39,6 +39,19 @@ export default class NoteLockerPlugin extends Plugin {
 				this.updateLeafMode(leaf)
 			)
 		);
+
+		this.registerEvent(
+			this.app.vault.on("rename", async (file, oldPath) => {
+				if (this.settings.lockedNotes.delete(oldPath)) {
+					if (!this.settings.lockedNotes.has(file.path)) {
+						this.settings.lockedNotes.add(file.path);
+					} else {
+						new Notice(`⚠️ Lock skipped: "${file.name}" was already locked`);
+					}
+					await this.saveSettings();
+				}
+			})
+		);
 	}
 
 	private initializeExistingLeaves() {
