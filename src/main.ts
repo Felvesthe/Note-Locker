@@ -102,6 +102,9 @@ export default class NoteLockerPlugin extends Plugin {
 	}
 
 	private addLockMenuItem(menu: Menu, filePath: string) {
+		const isNote = filePath.endsWith('.md');
+		if (!isNote) return;
+
 		const isLocked = this.settings.lockedNotes.has(filePath);
 		menu.addItem((item) =>
 			item
