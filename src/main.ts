@@ -1,24 +1,50 @@
-import { MarkdownView, Menu, Notice, Platform, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import {
+	MarkdownView,
+	Menu,
+	Notice,
+	Platform,
+	Plugin,
+	TFile,
+	WorkspaceLeaf,
+} from "obsidian";
 
-interface NoteLockerSettings {
-	lockedNotes: Set<string>;
-	mobileNotificationMaxLength: number;
-	desktopNotificationMaxLength: number;
-}
-
-const DEFAULT_SETTINGS: NoteLockerSettings = {
-	lockedNotes: new Set(),
-	mobileNotificationMaxLength: 18,
-	desktopNotificationMaxLength: 22
-};
+import { NoteLockerSettings, DEFAULT_SETTINGS } from "./models/types";
+import { FileExplorerUI } from "./ui/fileExplorer";
+import { StatusBarUI } from "./ui/statusBar";
+import { NoteLockerSettingTab } from "./settings";
 
 export default class NoteLockerPlugin extends Plugin {
-	settings = DEFAULT_SETTINGS;
+	settings: NoteLockerSettings = DEFAULT_SETTINGS;
+	fileExplorerUI: FileExplorerUI;
+	statusBarUI: StatusBarUI;
 
 	async onload() {
 		await this.loadSettings();
+
+		this.fileExplorerUI = new FileExplorerUI(this);
+		this.statusBarUI = new StatusBarUI(this);
+
 		this.registerEventHandlers();
+
 		this.initializeExistingLeaves();
+
+		if (this.settings.showStatusBarButton) {
+			this.statusBarUI.createStatusBarItem();
+		}
+
+		if (this.settings.showFileExplorerIcons) {
+			this.fileExplorerUI.addFileExplorerIconStyling();
+		}
+
+		this.addSettingTab(new NoteLockerSettingTab(this.app, this));
+	}
+
+	onunload() {
+		const styleEl = document.getElementById('note-locker-styles');
+		if (styleEl) styleEl.remove();
+
+		this.fileExplorerUI.removeFileExplorerIcons();
+		this.statusBarUI.removeStatusBarItem();
 	}
 
 	private registerEventHandlers() {
@@ -35,9 +61,10 @@ export default class NoteLockerPlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", (leaf) =>
-				this.updateLeafMode(leaf)
-			)
+			this.app.workspace.on("active-leaf-change", (leaf) => {
+				this.updateLeafMode(leaf);
+				this.statusBarUI.updateStatusBarButton();
+			})
 		);
 
 		this.registerEvent(
@@ -49,7 +76,21 @@ export default class NoteLockerPlugin extends Plugin {
 						new Notice(`⚠️ Lock skipped: "${file.name}" was already locked`);
 					}
 					await this.saveSettings();
+					this.fileExplorerUI.updateFileExplorerIcons();
 				}
+			})
+		);
+
+		this.registerEvent(
+			this.app.workspace.on("file-open", () => {
+				this.statusBarUI.updateStatusBarButton();
+				this.fileExplorerUI.updateFileExplorerIcons();
+			})
+		);
+
+		this.registerEvent(
+			this.app.workspace.on("layout-change", () => {
+				this.fileExplorerUI.updateFileExplorerIcons();
 			})
 		);
 	}
@@ -70,7 +111,7 @@ export default class NoteLockerPlugin extends Plugin {
 		);
 	}
 
-	private async toggleNoteLock(notePath: string) {
+	async toggleNoteLock(notePath: string) {
 		const isLocked = this.settings.lockedNotes.has(notePath);
 
 		isLocked
@@ -93,12 +134,12 @@ export default class NoteLockerPlugin extends Plugin {
 		new Notice(`${isLocked ? '🔓 Unlocked' : '🔒 Locked'}: ${displayName}`);
 
 		this.updateAllNoteInstances(notePath);
+		this.statusBarUI.updateStatusBarButton();
+		this.fileExplorerUI.updateFileExplorerIcons();
 	}
 
 	private truncateFileName(name: string): string {
-		const maxLength = Platform.isMobile
-									? this.settings.mobileNotificationMaxLength
-									: this.settings.desktopNotificationMaxLength;
+		const maxLength = this.settings.notificationMaxLength;
 		return name.length > maxLength
 			? `${name.slice(0, maxLength)}…`
 			: name;
@@ -133,16 +174,59 @@ export default class NoteLockerPlugin extends Plugin {
 		}
 	}
 
-	private async loadSettings() {
+	async loadSettings() {
 		const loaded = await this.loadData();
+
 		if (loaded) {
-			this.settings.lockedNotes = new Set(loaded.lockedNotes);
+			this.settings = {
+				...DEFAULT_SETTINGS,
+				...loaded,
+				lockedNotes: new Set(loaded.lockedNotes || [])
+			};
+		} else {
+			this.settings = { ...DEFAULT_SETTINGS };
 		}
+
+		if (Platform.isMobile && this.settings.notificationMaxLength === DEFAULT_SETTINGS.notificationMaxLength) {
+			this.settings.notificationMaxLength = 18; // Default for mobile
+		} else if (!Platform.isMobile && this.settings.notificationMaxLength === DEFAULT_SETTINGS.notificationMaxLength) {
+			this.settings.notificationMaxLength = 22; // Default for desktop
+		}
+
+		await this.saveSettings();
 	}
 
-	private async saveSettings() {
+
+	async saveSettings() {
 		await this.saveData({
+			...this.settings,
 			lockedNotes: Array.from(this.settings.lockedNotes),
 		});
+	}
+
+	async updateFileExplorerIconsVisibility(value: boolean) {
+		this.settings.showFileExplorerIcons = value;
+
+		if (value) {
+			this.fileExplorerUI.addFileExplorerIconStyling();
+		} else {
+			this.fileExplorerUI.removeFileExplorerIcons();
+		}
+
+		await this.saveSettings();
+	}
+
+	async updateStatusBarVisibility(value: boolean) {
+		this.settings.showStatusBarButton = value;
+
+		if (value) {
+			if (!this.statusBarUI.statusBarItemEl) {
+				this.statusBarUI.createStatusBarItem();
+			}
+		} else {
+			this.statusBarUI.removeStatusBarItem();
+		}
+
+		await this.saveSettings();
 	}
 }

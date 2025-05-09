@@ -1,7 +1,7 @@
 {
 	"name": "note-locker",
 	"version": "1.0.0",
-	"description": "Note Locker allows you to \"lock\" a note so that it opens in preview mode by default",
+	"description": "Lock notes to open in preview mode by default.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
