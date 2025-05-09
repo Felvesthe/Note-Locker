@@ -37,6 +37,23 @@ export default class NoteLockerPlugin extends Plugin {
 		}
 
 		this.addSettingTab(new NoteLockerSettingTab(this.app, this));
+
+		// hotkey
+		this.addCommand({
+			id: 'toggle-note-lock',
+			name: 'Toggle Lock for current note',
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (file && file.extension === 'md') {
+					if (!checking) {
+						this.toggleNoteLock(file.path);
+					}
+					return true;
+				}
+				return false;
+			},
+		});
+
 	}
 
 	onunload() {

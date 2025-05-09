@@ -47,6 +47,11 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 					}
 				}));
 
+		const hotkeyInfo = containerEl.createEl('p', {
+			text: 'You can set a hotkey for locking/unlocking notes in Settings → Hotkeys → Toggle Lock for current note.'
+		});
+		hotkeyInfo.style.fontStyle = 'italic';
+
 		containerEl.createEl('h3', { text: 'Locked Notes' });
 		const lockedNotesCount = this.plugin.settings.lockedNotes.size;
 		containerEl.createEl('p', {
