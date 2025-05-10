@@ -3,6 +3,7 @@ import type NoteLockerPlugin from "../main";
 
 export class FileExplorerUI {
 	private plugin: NoteLockerPlugin;
+	private folderObserver: MutationObserver | null = null;
 
 	constructor(plugin: NoteLockerPlugin) {
 		this.plugin = plugin;
@@ -37,7 +38,51 @@ export class FileExplorerUI {
 		document.head.appendChild(styleEl);
 
 		// Initial update
-		setTimeout(() => this.updateFileExplorerIcons(), 500);
+		setTimeout(() => {
+			this.updateFileExplorerIcons();
+			this.setupFolderObserver();
+		}, 500);
+	}
+
+	private setupFolderObserver(): void {
+		if (this.folderObserver) {
+			this.folderObserver.disconnect();
+			this.folderObserver = null;
+		}
+
+		const fileExplorer = document.querySelector('.workspace-split.mod-left-split .nav-files-container');
+		if (!fileExplorer) return;
+
+		this.folderObserver = new MutationObserver((mutations) => {
+			let shouldUpdate = false;
+
+			for (const mutation of mutations) {
+				if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+					shouldUpdate = true;
+					break;
+				}
+
+				if (mutation.type === 'attributes' &&
+					mutation.target instanceof HTMLElement &&
+					(mutation.target.classList.contains('nav-folder') ||
+						mutation.target.classList.contains('is-collapsed'))) {
+					shouldUpdate = true;
+					break;
+				}
+			}
+
+			if (shouldUpdate) {
+				// Avoid too many rapid updates
+				setTimeout(() => this.updateFileExplorerIcons(), 50);
+			}
+		});
+
+		this.folderObserver.observe(fileExplorer, {
+			childList: true,
+			attributes: true,
+			attributeFilter: ['class'],
+			subtree: true
+		});
 	}
 
 	public updateFileExplorerIcons(): void {
@@ -70,5 +115,10 @@ export class FileExplorerUI {
 
 	public removeFileExplorerIcons(): void {
 		document.querySelectorAll('.note-locker-icon').forEach(el => el.remove());
+
+		if (this.folderObserver) {
+			this.folderObserver.disconnect();
+			this.folderObserver = null;
+		}
 	}
 }
