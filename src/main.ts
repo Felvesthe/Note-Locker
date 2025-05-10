@@ -147,11 +147,13 @@ export default class NoteLockerPlugin extends Plugin {
 			return;
 		}
 
-		const fileName = file instanceof TFile ? file.basename :
-			notePath.split('/').pop()?.replace(/\..+$/, '') || notePath;
-		const displayName = this.truncateFileName(fileName);
+		if (this.settings.showNotifications) {
+			const fileName = file instanceof TFile ? file.basename :
+				notePath.split('/').pop()?.replace(/\..+$/, '') || notePath;
+			const displayName = this.truncateFileName(fileName);
 
-		new Notice(`${isLocked ? '🔓 Unlocked' : '🔒 Locked'}: ${displayName}`);
+			new Notice(`${isLocked ? '🔓 Unlocked' : '🔒 Locked'}: ${displayName}`);
+		}
 
 		this.updateAllNoteInstances(notePath);
 		this.statusBarUI.updateStatusBarButton();

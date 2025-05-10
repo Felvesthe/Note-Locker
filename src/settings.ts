@@ -31,6 +31,16 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 					await this.plugin.updateStatusBarVisibility(value);
 				}));
 
+		new Setting(containerEl)
+			.setName('Show notifications')
+			.setDesc('Show notifications when locking or unlocking notes')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showNotifications)
+				.onChange(async (value) => {
+					this.plugin.settings.showNotifications = value;
+					await this.plugin.saveSettings();
+				}));
+
 		const mobileNotificationSetting = new Setting(containerEl)
 			.setName('Mobile notification max length')
 			.setDesc('Maximum length of file names in notifications on mobile devices')

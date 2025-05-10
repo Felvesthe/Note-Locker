@@ -4,6 +4,7 @@ export interface NoteLockerSettings {
 	desktopNotificationMaxLength: number;
 	showFileExplorerIcons: boolean;
 	showStatusBarButton: boolean;
+	showNotifications: boolean;
 }
 
 export const DEFAULT_SETTINGS: NoteLockerSettings = {
@@ -11,5 +12,6 @@ export const DEFAULT_SETTINGS: NoteLockerSettings = {
 	mobileNotificationMaxLength: 18,
 	desktopNotificationMaxLength: 22,
 	showFileExplorerIcons: true,
-	showStatusBarButton: true
+	showStatusBarButton: true,
+	showNotifications: true
 };
