@@ -13,8 +13,6 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		let defaultNotificationMaxLength = Platform.isMobile ? 18 : 22;
-
 		new Setting(containerEl)
 			.setName('Show locked notes in file explorer')
 			.setDesc('Display a lock icon next to locked notes in the file explorer')
@@ -33,19 +31,39 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 					await this.plugin.updateStatusBarVisibility(value);
 				}));
 
-		new Setting(containerEl)
-			.setName('Notification max length')
-			.setDesc('Maximum length of file names in notifications')
+		const mobileNotificationSetting = new Setting(containerEl)
+			.setName('Mobile notification max length')
+			.setDesc('Maximum length of file names in notifications on mobile devices')
 			.addText(text => text
-				.setPlaceholder(Platform.isMobile ? '18' : '22')
-				.setValue(String(this.plugin.settings.notificationMaxLength || defaultNotificationMaxLength))
+				.setPlaceholder('18')
+				.setValue(String(this.plugin.settings.mobileNotificationMaxLength))
 				.onChange(async (value) => {
 					const numValue = parseInt(value);
 					if (!isNaN(numValue) && numValue > 0) {
-						this.plugin.settings.notificationMaxLength = numValue;
+						this.plugin.settings.mobileNotificationMaxLength = numValue;
 						await this.plugin.saveSettings();
 					}
 				}));
+
+		const desktopNotificationSetting = new Setting(containerEl)
+			.setName('Desktop notification max length')
+			.setDesc('Maximum length of file names in notifications on desktop')
+			.addText(text => text
+				.setPlaceholder('22')
+				.setValue(String(this.plugin.settings.desktopNotificationMaxLength))
+				.onChange(async (value) => {
+					const numValue = parseInt(value);
+					if (!isNaN(numValue) && numValue > 0) {
+						this.plugin.settings.desktopNotificationMaxLength = numValue;
+						await this.plugin.saveSettings();
+					}
+				}));
+
+		if (Platform.isMobile) {
+			desktopNotificationSetting.settingEl.style.display = 'none';
+		} else {
+			mobileNotificationSetting.settingEl.style.display = 'none';
+		}
 
 		const hotkeyInfo = containerEl.createEl('p', {
 			text: 'You can set a hotkey for locking/unlocking notes in Settings → Hotkeys → Toggle Lock for current note.'

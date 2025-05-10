@@ -159,7 +159,9 @@ export default class NoteLockerPlugin extends Plugin {
 	}
 
 	private truncateFileName(name: string): string {
-		const maxLength = this.settings.notificationMaxLength;
+		const maxLength = Platform.isMobile
+			? this.settings.mobileNotificationMaxLength
+			: this.settings.desktopNotificationMaxLength;
 		return name.length > maxLength
 			? `${name.slice(0, maxLength)}…`
 			: name;
@@ -196,26 +198,14 @@ export default class NoteLockerPlugin extends Plugin {
 
 	async loadSettings() {
 		const loaded = await this.loadData();
-
 		if (loaded) {
 			this.settings = {
 				...DEFAULT_SETTINGS,
 				...loaded,
 				lockedNotes: new Set(loaded.lockedNotes || [])
 			};
-		} else {
-			this.settings = { ...DEFAULT_SETTINGS };
 		}
-
-		if (Platform.isMobile && this.settings.notificationMaxLength === DEFAULT_SETTINGS.notificationMaxLength) {
-			this.settings.notificationMaxLength = 18; // Default for mobile
-		} else if (!Platform.isMobile && this.settings.notificationMaxLength === DEFAULT_SETTINGS.notificationMaxLength) {
-			this.settings.notificationMaxLength = 22; // Default for desktop
-		}
-
-		await this.saveSettings();
 	}
-
 
 	async saveSettings() {
 		await this.saveData({
