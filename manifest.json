@@ -1,7 +1,7 @@
 {
 	"id": "note-locker",
 	"name": "Note Locker",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"minAppVersion": "0.15.0",
 	"description": "Lock notes to open in preview mode by default.",
 	"author": "Felvesthe",
