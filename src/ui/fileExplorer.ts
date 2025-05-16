@@ -4,6 +4,7 @@ import type NoteLockerPlugin from "../main";
 export class FileExplorerUI {
 	private plugin: NoteLockerPlugin;
 	private folderObserver: MutationObserver | null = null;
+	private updateDebounceTimeout: number | null = null;
 
 	constructor(plugin: NoteLockerPlugin) {
 		this.plugin = plugin;
@@ -38,10 +39,40 @@ export class FileExplorerUI {
 		document.head.appendChild(styleEl);
 
 		// Initial update
-		setTimeout(() => {
+		this.plugin.app.workspace.onLayoutReady(() => {
 			this.updateFileExplorerIcons();
 			this.setupFolderObserver();
-		}, 500);
+
+			// Register handlers for folder expansion/collapse
+			this.registerFolderClickHandlers();
+		});
+	}
+
+	private registerFolderClickHandlers(): void {
+		const fileExplorer = document.querySelector('.workspace-split.mod-left-split .nav-files-container');
+		if (!fileExplorer) return;
+
+		fileExplorer.addEventListener('click', (e) => {
+			const target = e.target as HTMLElement;
+			const folderCollapseIndicator = target.closest('.nav-folder-collapse-indicator') ||
+				target.closest('.nav-folder-title');
+
+			if (folderCollapseIndicator) {
+				// A folder was clicked, so schedule an update after DOM changes
+				this.debouncedUpdateIcons(250);
+			}
+		});
+	}
+
+	private debouncedUpdateIcons(delay: number = 100): void {
+		if (this.updateDebounceTimeout !== null) {
+			window.clearTimeout(this.updateDebounceTimeout);
+		}
+
+		this.updateDebounceTimeout = window.setTimeout(() => {
+			this.updateFileExplorerIcons();
+			this.updateDebounceTimeout = null;
+		}, delay);
 	}
 
 	private setupFolderObserver(): void {
@@ -72,8 +103,7 @@ export class FileExplorerUI {
 			}
 
 			if (shouldUpdate) {
-				// Avoid too many rapid updates
-				setTimeout(() => this.updateFileExplorerIcons(), 50);
+				this.debouncedUpdateIcons(150);
 			}
 		});
 
@@ -115,10 +145,19 @@ export class FileExplorerUI {
 
 	public removeFileExplorerIcons(): void {
 		document.querySelectorAll('.note-locker-icon').forEach(el => el.remove());
+	}
+
+	public cleanup(): void {
+		if (this.updateDebounceTimeout !== null) {
+			window.clearTimeout(this.updateDebounceTimeout);
+			this.updateDebounceTimeout = null;
+		}
 
 		if (this.folderObserver) {
 			this.folderObserver.disconnect();
 			this.folderObserver = null;
 		}
+
+		this.removeFileExplorerIcons();
 	}
 }

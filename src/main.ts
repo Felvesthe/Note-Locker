@@ -53,14 +53,13 @@ export default class NoteLockerPlugin extends Plugin {
 				return false;
 			},
 		});
-
 	}
 
 	onunload() {
 		const styleEl = document.getElementById('note-locker-styles');
 		if (styleEl) styleEl.remove();
 
-		this.fileExplorerUI.removeFileExplorerIcons();
+		this.fileExplorerUI.cleanup();
 		this.statusBarUI.removeStatusBarItem();
 	}
 
