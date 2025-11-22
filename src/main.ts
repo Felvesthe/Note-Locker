@@ -6,6 +6,8 @@ import {
 	Plugin,
 	TFile,
 	WorkspaceLeaf,
+	TAbstractFile,
+	TFolder,
 } from "obsidian";
 
 import { NoteLockerSettings, DEFAULT_SETTINGS } from "./models/types";
@@ -71,6 +73,12 @@ export default class NoteLockerPlugin extends Plugin {
 		);
 
 		this.registerEvent(
+			this.app.workspace.on("files-menu", (menu, files) =>
+				this.addBulkLockMenuItem(menu, files)
+			)
+		);
+
+		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu, _, view) =>
 				view.file && this.addLockMenuItem(menu, view.file.path)
 			)
@@ -128,6 +136,74 @@ export default class NoteLockerPlugin extends Plugin {
 		this.app.workspace
 			.getLeavesOfType("markdown")
 			.forEach((leaf) => this.updateLeafMode(leaf));
+	}
+
+	private addBulkLockMenuItem(menu: Menu, files: TAbstractFile[]) {
+		const validItems = files.filter(f =>
+			(f instanceof TFile && f.extension === 'md') ||
+			(f instanceof TFolder)
+		);
+
+		if (validItems.length < 2) return;
+
+		let allLocked = true;
+		let allUnlocked = true;
+
+		for (const item of validItems) {
+			const isLocked = this.isPathLocked(item.path);
+			if (isLocked) {
+				allUnlocked = false;
+			} else {
+				allLocked = false;
+			}
+		}
+
+		if (allLocked) {
+			menu.addItem((item) =>
+				item
+					.setTitle(`Unlock ${validItems.length} items`)
+					.setIcon("unlock")
+					.onClick(() => this.toggleBulkLock(validItems, false))
+			);
+		} else if (allUnlocked) {
+			menu.addItem((item) =>
+				item
+					.setTitle(`Lock ${validItems.length} items`)
+					.setIcon("lock")
+					.onClick(() => this.toggleBulkLock(validItems, true))
+			);
+		}
+		// if mixed, do nothing
+	}
+
+	private async toggleBulkLock(files: TAbstractFile[], shouldLock: boolean) {
+		for (const file of files) {
+			if (file instanceof TFile) {
+				if (shouldLock) {
+					this.settings.lockedNotes.add(file.path);
+				} else {
+					this.settings.lockedNotes.delete(file.path);
+				}
+			} else if (file instanceof TFolder) {
+				if (shouldLock) {
+					this.settings.lockedFolders.add(file.path);
+				} else {
+					this.settings.lockedFolders.delete(file.path);
+				}
+			}
+		}
+
+		await this.saveSettings();
+		this.fileExplorerUI.updateFileExplorerIcons();
+
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (leaf.view instanceof MarkdownView && leaf.view.file) {
+				const path = leaf.view.file.path;
+				if (files.some(f => f.path === path || (f instanceof TFolder && path.startsWith(f.path + '/')))) {
+					this.updateLeafMode(leaf);
+				}
+			}
+		});
 	}
 
 	private addLockMenuItem(menu: Menu, path: string) {
