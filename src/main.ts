@@ -71,7 +71,7 @@ export default class NoteLockerPlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.workspace.on("editor-menu",(menu, _, view) =>
+			this.app.workspace.on("editor-menu", (menu, _, view) =>
 				view.file && this.addLockMenuItem(menu, view.file.path)
 			)
 		);
@@ -85,12 +85,25 @@ export default class NoteLockerPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on("rename", async (file, oldPath) => {
+				let settingsChanged = false;
+
+				// Handle locked notes
 				if (this.settings.lockedNotes.delete(oldPath)) {
 					if (!this.settings.lockedNotes.has(file.path)) {
 						this.settings.lockedNotes.add(file.path);
-					} else {
-						new Notice(`⚠️ Lock skipped: "${file.name}" was already locked`);
+						settingsChanged = true;
 					}
+				}
+
+				// Handle locked folders
+				if (this.settings.lockedFolders.delete(oldPath)) {
+					if (!this.settings.lockedFolders.has(file.path)) {
+						this.settings.lockedFolders.add(file.path);
+						settingsChanged = true;
+					}
+				}
+
+				if (settingsChanged) {
 					await this.saveSettings();
 					this.fileExplorerUI.updateFileExplorerIcons();
 				}
@@ -117,17 +130,69 @@ export default class NoteLockerPlugin extends Plugin {
 			.forEach((leaf) => this.updateLeafMode(leaf));
 	}
 
-	private addLockMenuItem(menu: Menu, filePath: string) {
-		const isNote = filePath.endsWith('.md');
-		if (!isNote) return;
+	private addLockMenuItem(menu: Menu, path: string) {
+		if (this.isParentFolderLocked(path)) {
+			return;
+		}
 
-		const isLocked = this.settings.lockedNotes.has(filePath);
-		menu.addItem((item) =>
-			item
-				.setTitle(isLocked ? "Unlock" : "Lock")
-				.setIcon(isLocked ? "unlock" : "lock")
-				.onClick(() => this.toggleNoteLock(filePath))
-		);
+		const file = this.app.vault.getAbstractFileByPath(path);
+
+		if (file instanceof TFile && file.extension === 'md') {
+			const isLocked = this.settings.lockedNotes.has(path);
+			menu.addItem((item) =>
+				item
+					.setTitle(isLocked ? "Unlock" : "Lock")
+					.setIcon(isLocked ? "unlock" : "lock")
+					.onClick(() => this.toggleNoteLock(path))
+			);
+		} else if (file && !(file instanceof TFile)) {
+			const isLocked = this.settings.lockedFolders.has(path);
+			menu.addItem((item) =>
+				item
+					.setTitle(isLocked ? "Unlock all notes in folder" : "Lock all notes in folder")
+					.setIcon(isLocked ? "unlock" : "lock")
+					.onClick(() => this.toggleFolderLock(path))
+			);
+		}
+	}
+
+	private isParentFolderLocked(path: string): boolean {
+		let currentPath = path;
+		while (currentPath.includes("/")) {
+			currentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
+			if (this.settings.lockedFolders.has(currentPath)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	async toggleFolderLock(folderPath: string) {
+		const isLocked = this.settings.lockedFolders.has(folderPath);
+
+		isLocked
+			? this.settings.lockedFolders.delete(folderPath)
+			: this.settings.lockedFolders.add(folderPath);
+
+		await this.saveSettings();
+
+		new Notice(`${isLocked ? '🔓 Unlocked' : '🔒 Locked'} folder: ${folderPath}`);
+
+		this.updateAllNotesInFolder(folderPath);
+		this.statusBarUI.updateStatusBarButton();
+		this.fileExplorerUI.updateFileExplorerIcons();
+	}
+
+	private updateAllNotesInFolder(folderPath: string) {
+		this.app.workspace
+			.getLeavesOfType("markdown")
+			.forEach((leaf) => {
+				if (leaf.view instanceof MarkdownView && leaf.view.file) {
+					if (leaf.view.file.path.startsWith(folderPath + "/")) {
+						this.updateLeafMode(leaf);
+					}
+				}
+			});
 	}
 
 	async toggleNoteLock(notePath: string) {
@@ -180,12 +245,25 @@ export default class NoteLockerPlugin extends Plugin {
 		return view instanceof MarkdownView && view.file?.path === notePath;
 	}
 
+	public isPathLocked(path: string): boolean {
+		if (this.settings.lockedNotes.has(path)) return true;
+
+		let currentPath = path;
+		while (currentPath.includes("/")) {
+			currentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
+			if (this.settings.lockedFolders.has(currentPath)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private updateLeafMode(leaf: WorkspaceLeaf | null) {
 		if (!leaf || !(leaf.view instanceof MarkdownView)) return;
 
 		const { view } = leaf;
 		const targetMode =
-			view.file && this.settings.lockedNotes.has(view.file.path)
+			view.file && this.isPathLocked(view.file.path)
 				? "preview"
 				: "source";
 
@@ -203,7 +281,8 @@ export default class NoteLockerPlugin extends Plugin {
 			this.settings = {
 				...DEFAULT_SETTINGS,
 				...loaded,
-				lockedNotes: new Set(loaded.lockedNotes || [])
+				lockedNotes: new Set(loaded.lockedNotes || []),
+				lockedFolders: new Set(loaded.lockedFolders || [])
 			};
 		}
 	}
@@ -212,6 +291,7 @@ export default class NoteLockerPlugin extends Plugin {
 		await this.saveData({
 			...this.settings,
 			lockedNotes: Array.from(this.settings.lockedNotes),
+			lockedFolders: Array.from(this.settings.lockedFolders),
 		});
 	}
 

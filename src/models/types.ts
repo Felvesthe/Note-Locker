@@ -1,5 +1,6 @@
 export interface NoteLockerSettings {
 	lockedNotes: Set<string>;
+	lockedFolders: Set<string>;
 	mobileNotificationMaxLength: number;
 	desktopNotificationMaxLength: number;
 	showFileExplorerIcons: boolean;
@@ -9,6 +10,7 @@ export interface NoteLockerSettings {
 
 export const DEFAULT_SETTINGS: NoteLockerSettings = {
 	lockedNotes: new Set(),
+	lockedFolders: new Set(),
 	mobileNotificationMaxLength: 18,
 	desktopNotificationMaxLength: 22,
 	showFileExplorerIcons: true,

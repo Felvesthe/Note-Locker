@@ -1,4 +1,4 @@
-import {App, Platform, PluginSettingTab, Setting} from "obsidian";
+import { App, Platform, PluginSettingTab, Setting } from "obsidian";
 import type NoteLockerPlugin from "./main";
 
 export class NoteLockerSettingTab extends PluginSettingTab {
@@ -80,10 +80,10 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 		});
 		hotkeyInfo.style.fontStyle = 'italic';
 
-		containerEl.createEl('h3', { text: 'Locked Notes' });
+		containerEl.createEl('h3', { text: 'Locked Notes & Folders' });
 		const lockedNotesCount = this.plugin.settings.lockedNotes.size;
 		containerEl.createEl('p', {
-			text: `You currently have ${lockedNotesCount} locked note${lockedNotesCount !== 1 ? 's' : ''}.`
+			text: `You currently have ${lockedNotesCount} locked note${lockedNotesCount !== 1 ? 's' : ''} and ${this.plugin.settings.lockedFolders.size} locked folder${this.plugin.settings.lockedFolders.size !== 1 ? 's' : ''}.`
 		});
 	}
 }
