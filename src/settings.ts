@@ -80,10 +80,24 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 		});
 		hotkeyInfo.style.fontStyle = 'italic';
 
-		containerEl.createEl('h3', { text: 'Locked Notes & Folders' });
+		containerEl.createEl('h3', { text: 'Locked Notes & Folders Statistics' });
 		const lockedNotesCount = this.plugin.settings.lockedNotes.size;
+		const lockedFoldersCount = this.plugin.settings.lockedFolders.size;
+		const strictLockedNotesCount = this.plugin.settings.strictLockedNotes.size;
+
 		containerEl.createEl('p', {
-			text: `You currently have ${lockedNotesCount} locked note${lockedNotesCount !== 1 ? 's' : ''} and ${this.plugin.settings.lockedFolders.size} locked folder${this.plugin.settings.lockedFolders.size !== 1 ? 's' : ''}.`
+			text: 'You currently have:'
 		});
+		containerEl
+			.createEl('ul')
+			.createEl('li', {
+				text: `Locked notes: ${lockedNotesCount}`
+			})
+			.createEl('li', {
+				text: `Locked folders: ${lockedFoldersCount}`
+			})
+			.createEl('li', {
+				text: `Strictly locked notes: ${strictLockedNotesCount}`
+			});
 	}
 }
