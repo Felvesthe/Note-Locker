@@ -143,7 +143,7 @@ export class FileExplorerUI {
 
 		let shouldHaveIcon = false;
 		if (item.classList.contains('nav-file')) {
-			shouldHaveIcon = this.plugin.settings.lockedNotes.has(path);
+			shouldHaveIcon = this.plugin.settings.lockedNotes.has(path) || this.plugin.settings.strictLockedNotes.has(path);
 		} else if (item.classList.contains('nav-folder')) {
 			shouldHaveIcon = this.plugin.settings.lockedFolders.has(path);
 		}
@@ -166,8 +166,7 @@ export class FileExplorerUI {
 			const filePath = titleEl.getAttribute('data-path');
 			if (!filePath) return;
 
-			// Only show icon if file is explicitly locked
-			const shouldHaveIcon = this.plugin.settings.lockedNotes.has(filePath);
+			const shouldHaveIcon = this.plugin.settings.lockedNotes.has(filePath) || this.plugin.settings.strictLockedNotes.has(filePath);
 			this.updateIconState(titleEl, shouldHaveIcon);
 		});
 

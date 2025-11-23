@@ -1,5 +1,6 @@
 import { setIcon } from "obsidian";
 import type NoteLockerPlugin from "../main";
+import { StrictUnlockModal } from "./strictUnlockModal";
 
 export class StatusBarUI {
 	private plugin: NoteLockerPlugin;
@@ -18,7 +19,13 @@ export class StatusBarUI {
 			this.statusBarItemEl.addEventListener('click', () => {
 				const activeFile = this.plugin.app.workspace.getActiveFile();
 				if (activeFile) {
-					this.plugin.toggleNoteLock(activeFile.path);
+					if (this.plugin.settings.strictLockedNotes.has(activeFile.path)) {
+						new StrictUnlockModal(this.plugin.app, () => {
+							this.plugin.toggleStrictLock(activeFile.path);
+						}).open();
+					} else {
+						this.plugin.toggleNoteLock(activeFile.path);
+					}
 				}
 			});
 
@@ -41,15 +48,28 @@ export class StatusBarUI {
 		document.head.appendChild(style);
 
 		if (this.plugin.app.workspace.getActiveFile()) {
+			const activeFile = this.plugin.app.workspace.getActiveFile();
+			const path = activeFile ? activeFile.path : '';
+			const isStrictLocked = this.plugin.settings.strictLockedNotes.has(path);
+			const isLocked = this.isCurrentNoteActive();
+
 			const iconSpan = this.statusBarItemEl.createSpan({ cls: 'locker-icon' });
-			setIcon(iconSpan, isLocked ? 'lock' : 'unlock');
-			this.statusBarItemEl.createSpan({
-				text: isLocked ? ' Locked' : ' Unlocked'
-			});
+
+			if (isStrictLocked) {
+				setIcon(iconSpan, 'lock');
+				iconSpan.setText('🔓');
+				this.statusBarItemEl.createSpan({ text: ' Strictly Locked' });
+				this.statusBarItemEl.setAttribute('aria-label', 'Strictly locked. Click to unlock.');
+			} else {
+				setIcon(iconSpan, isLocked ? 'lock' : 'unlock');
+				this.statusBarItemEl.createSpan({
+					text: isLocked ? ' Locked' : ' Unlocked'
+				});
+				this.statusBarItemEl.setAttribute('aria-label',
+					isLocked ? 'Click to unlock this note' : 'Click to lock this note');
+			}
 
 			this.statusBarItemEl.style.cursor = 'pointer';
-			this.statusBarItemEl.setAttribute('aria-label',
-				isLocked ? 'Click to unlock this note' : 'Click to lock this note');
 		} else {
 			this.statusBarItemEl.style.cursor = 'default';
 		}

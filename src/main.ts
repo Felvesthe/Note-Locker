@@ -14,6 +14,7 @@ import { NoteLockerSettings, DEFAULT_SETTINGS } from "./models/types";
 import { FileExplorerUI } from "./ui/fileExplorer";
 import { StatusBarUI } from "./ui/statusBar";
 import { NoteLockerSettingTab } from "./settings";
+import { StrictUnlockModal } from "./ui/strictUnlockModal";
 
 export default class NoteLockerPlugin extends Plugin {
 	settings: NoteLockerSettings = DEFAULT_SETTINGS;
@@ -48,9 +49,35 @@ export default class NoteLockerPlugin extends Plugin {
 				const file = this.app.workspace.getActiveFile();
 				if (file && file.extension === 'md') {
 					if (!checking) {
-						this.toggleNoteLock(file.path);
+						if (this.settings.strictLockedNotes.has(file.path)) {
+							new StrictUnlockModal(this.app, () => {
+								this.toggleStrictLock(file.path);
+							}).open();
+						} else {
+							this.toggleNoteLock(file.path);
+						}
 					}
 					return true;
+				}
+				return false;
+			},
+		});
+
+		this.addCommand({
+			id: 'switch-to-edit-mode-intercept',
+			name: 'Switch to Edit Mode (Strict Lock Check)',
+			hotkeys: [{ modifiers: ["Mod"], key: "e" }],
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (file && file.extension === 'md') {
+					if (this.settings.strictLockedNotes.has(file.path)) {
+						if (!checking) {
+							new StrictUnlockModal(this.app, () => {
+								this.toggleStrictLock(file.path);
+							}).open();
+						}
+						return true;
+					}
 				}
 				return false;
 			},
@@ -95,7 +122,6 @@ export default class NoteLockerPlugin extends Plugin {
 			this.app.vault.on("rename", async (file, oldPath) => {
 				let settingsChanged = false;
 
-				// Handle locked notes
 				if (this.settings.lockedNotes.delete(oldPath)) {
 					if (!this.settings.lockedNotes.has(file.path)) {
 						this.settings.lockedNotes.add(file.path);
@@ -103,7 +129,6 @@ export default class NoteLockerPlugin extends Plugin {
 					}
 				}
 
-				// Handle locked folders
 				if (this.settings.lockedFolders.delete(oldPath)) {
 					if (!this.settings.lockedFolders.has(file.path)) {
 						this.settings.lockedFolders.add(file.path);
@@ -128,6 +153,7 @@ export default class NoteLockerPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("layout-change", () => {
 				this.fileExplorerUI.updateFileExplorerIcons();
+				this.app.workspace.iterateAllLeaves((leaf) => this.updateLeafMode(leaf));
 			})
 		);
 	}
@@ -148,13 +174,20 @@ export default class NoteLockerPlugin extends Plugin {
 
 		let allLocked = true;
 		let allUnlocked = true;
+		let allStrictUnlocked = true;
 
 		for (const item of validItems) {
 			const isLocked = this.isPathLocked(item.path);
+			const isStrictLocked = this.settings.strictLockedNotes.has(item.path);
+
 			if (isLocked) {
 				allUnlocked = false;
 			} else {
 				allLocked = false;
+			}
+
+			if (isStrictLocked) {
+				allStrictUnlocked = false;
 			}
 		}
 
@@ -163,7 +196,18 @@ export default class NoteLockerPlugin extends Plugin {
 				item
 					.setTitle(`Unlock ${validItems.length} items`)
 					.setIcon("unlock")
-					.onClick(() => this.toggleBulkLock(validItems, false))
+					.onClick(() => {
+						if (!allStrictUnlocked) {
+							new StrictUnlockModal(
+								this.app,
+								() => this.toggleBulkLock(validItems, false),
+								"Strictly Locked Items",
+								"At least one of the selected items is strictly locked."
+							).open();
+						} else {
+							this.toggleBulkLock(validItems, false);
+						}
+					})
 			);
 		} else if (allUnlocked) {
 			menu.addItem((item) =>
@@ -173,7 +217,18 @@ export default class NoteLockerPlugin extends Plugin {
 					.onClick(() => this.toggleBulkLock(validItems, true))
 			);
 		}
-		// if mixed, do nothing
+
+		const hasFiles = validItems.some(f => f instanceof TFile);
+		if (allStrictUnlocked && hasFiles) {
+			if (allUnlocked || allLocked) {
+				menu.addItem((item) =>
+					item
+						.setTitle(`Strict Lock ${validItems.length} items`)
+						.setIcon("lock")
+						.onClick(() => this.toggleBulkStrictLock(validItems, true))
+				);
+			}
+		}
 	}
 
 	private async toggleBulkLock(files: TAbstractFile[], shouldLock: boolean) {
@@ -183,6 +238,7 @@ export default class NoteLockerPlugin extends Plugin {
 					this.settings.lockedNotes.add(file.path);
 				} else {
 					this.settings.lockedNotes.delete(file.path);
+					this.settings.strictLockedNotes.delete(file.path);
 				}
 			} else if (file instanceof TFolder) {
 				if (shouldLock) {
@@ -206,6 +262,30 @@ export default class NoteLockerPlugin extends Plugin {
 		});
 	}
 
+	private async toggleBulkStrictLock(files: TAbstractFile[], shouldLock: boolean) {
+		for (const file of files) {
+			if (file instanceof TFile) {
+				if (shouldLock) {
+					this.settings.strictLockedNotes.add(file.path);
+				} else {
+					this.settings.strictLockedNotes.delete(file.path);
+				}
+			}
+		}
+
+		await this.saveSettings();
+		this.fileExplorerUI.updateFileExplorerIcons();
+
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (leaf.view instanceof MarkdownView && leaf.view.file) {
+				const path = leaf.view.file.path;
+				if (files.some(f => f.path === path)) {
+					this.updateLeafMode(leaf);
+				}
+			}
+		});
+	}
+
 	private addLockMenuItem(menu: Menu, path: string) {
 		if (this.isParentFolderLocked(path)) {
 			return;
@@ -215,12 +295,38 @@ export default class NoteLockerPlugin extends Plugin {
 
 		if (file instanceof TFile && file.extension === 'md') {
 			const isLocked = this.settings.lockedNotes.has(path);
-			menu.addItem((item) =>
-				item
-					.setTitle(isLocked ? "Unlock" : "Lock")
-					.setIcon(isLocked ? "unlock" : "lock")
-					.onClick(() => this.toggleNoteLock(path))
-			);
+			const isStrictLocked = this.settings.strictLockedNotes.has(path);
+
+			if (!isStrictLocked) {
+				menu.addItem((item) =>
+					item
+						.setTitle(isLocked ? "Unlock" : "Lock")
+						.setIcon(isLocked ? "unlock" : "lock")
+						.onClick(() => this.toggleNoteLock(path))
+				);
+			}
+
+			if (!isLocked) {
+				if (!isStrictLocked) {
+					menu.addItem((item) =>
+						item
+							.setTitle("Strict Lock")
+							.setIcon("lock")
+							.onClick(() => this.toggleStrictLock(path))
+					);
+				} else {
+					menu.addItem((item) =>
+						item
+							.setTitle("Strict Unlock")
+							.setIcon("unlock")
+							.onClick(() => {
+								new StrictUnlockModal(this.app, () => {
+									this.toggleStrictLock(path);
+								}).open();
+							})
+					);
+				}
+			}
 		} else if (file && !(file instanceof TFile)) {
 			const isLocked = this.settings.lockedFolders.has(path);
 			menu.addItem((item) =>
@@ -300,6 +406,24 @@ export default class NoteLockerPlugin extends Plugin {
 		this.fileExplorerUI.updateFileExplorerIcons();
 	}
 
+	async toggleStrictLock(notePath: string) {
+		const isStrictLocked = this.settings.strictLockedNotes.has(notePath);
+
+		if (isStrictLocked) {
+			this.settings.strictLockedNotes.delete(notePath);
+		} else {
+			this.settings.strictLockedNotes.add(notePath);
+		}
+
+		await this.saveSettings();
+
+		new Notice(`${isStrictLocked ? '🔓 Strictly Unlocked' : '🔒 Strictly Locked'}: ${notePath}`);
+
+		this.updateAllNoteInstances(notePath);
+		this.statusBarUI.updateStatusBarButton();
+		this.fileExplorerUI.updateFileExplorerIcons();
+	}
+
 	private truncateFileName(name: string): string {
 		const maxLength = Platform.isMobile
 			? this.settings.mobileNotificationMaxLength
@@ -322,6 +446,7 @@ export default class NoteLockerPlugin extends Plugin {
 	}
 
 	public isPathLocked(path: string): boolean {
+		if (this.settings.strictLockedNotes.has(path)) return true;
 		if (this.settings.lockedNotes.has(path)) return true;
 
 		let currentPath = path;
@@ -338,16 +463,84 @@ export default class NoteLockerPlugin extends Plugin {
 		if (!leaf || !(leaf.view instanceof MarkdownView)) return;
 
 		const { view } = leaf;
-		const targetMode =
-			view.file && this.isPathLocked(view.file.path)
-				? "preview"
-				: "source";
+		const path = view.file?.path;
+		if (!path) return;
 
-		if (leaf.getViewState().state?.mode !== targetMode) {
-			leaf.setViewState({
-				...leaf.getViewState(),
-				state: { ...leaf.getViewState().state, mode: targetMode },
+		const isStrictLocked = this.settings.strictLockedNotes.has(path);
+		const isLocked = this.isPathLocked(path);
+
+		if (isStrictLocked) {
+			const state = leaf.getViewState();
+			if (state.state?.mode === 'source') {
+				leaf.setViewState({
+					...state,
+					state: { ...state.state, mode: 'preview' },
+				});
+
+				if (this.app.workspace.activeLeaf === leaf) {
+					new StrictUnlockModal(this.app, () => {
+						this.toggleStrictLock(path);
+					}).open();
+				}
+				return;
+			}
+		} else if (isLocked) {
+			const state = leaf.getViewState();
+			if (state.state?.mode === 'source') {
+				leaf.setViewState({
+					...state,
+					state: { ...state.state, mode: 'preview' },
+				});
+			}
+		}
+
+		if (isStrictLocked) {
+			const container = view.containerEl;
+			const allActions = container.querySelectorAll('.view-action');
+
+			allActions.forEach(btn => {
+				if (btn instanceof HTMLElement) {
+					const ariaLabel = btn.getAttribute('aria-label') || '';
+					const hasPencilIcon = !!btn.querySelector('.lucide-pencil');
+
+					if (hasPencilIcon || ariaLabel.includes('Edit') || ariaLabel.includes('edit') || ariaLabel.includes('Switch to editing')) {
+						btn.style.display = 'none';
+					}
+				}
 			});
+
+			let lockBtn = container.querySelector('.note-locker-strict-btn');
+			if (!lockBtn) {
+				lockBtn = document.createElement('div');
+				lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
+				lockBtn.setAttribute('aria-label', 'Strictly Locked');
+				lockBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+
+				lockBtn.addEventListener('click', () => {
+					new StrictUnlockModal(this.app, () => {
+						this.toggleStrictLock(path);
+					}).open();
+				});
+
+				const actionsContainer = container.querySelector('.view-actions');
+				if (actionsContainer) {
+					actionsContainer.prepend(lockBtn);
+				}
+			}
+		} else {
+			const container = view.containerEl;
+			const editBtns = container.querySelectorAll('.view-action');
+			editBtns.forEach(btn => {
+				if (btn instanceof HTMLElement) {
+					if (btn.getAttribute('aria-label')?.includes('Edit') ||
+						btn.getAttribute('aria-label')?.includes('edit') ||
+						btn.querySelector('.lucide-pencil')) {
+						btn.style.display = '';
+					}
+				}
+			});
+			const lockBtn = container.querySelector('.note-locker-strict-btn');
+			if (lockBtn) lockBtn.remove();
 		}
 	}
 
@@ -358,7 +551,8 @@ export default class NoteLockerPlugin extends Plugin {
 				...DEFAULT_SETTINGS,
 				...loaded,
 				lockedNotes: new Set(loaded.lockedNotes || []),
-				lockedFolders: new Set(loaded.lockedFolders || [])
+				lockedFolders: new Set(loaded.lockedFolders || []),
+				strictLockedNotes: new Set(loaded.strictLockedNotes || [])
 			};
 		}
 	}
@@ -368,6 +562,7 @@ export default class NoteLockerPlugin extends Plugin {
 			...this.settings,
 			lockedNotes: Array.from(this.settings.lockedNotes),
 			lockedFolders: Array.from(this.settings.lockedFolders),
+			strictLockedNotes: Array.from(this.settings.strictLockedNotes),
 		});
 	}
 
