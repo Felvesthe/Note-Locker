@@ -459,7 +459,7 @@ export default class NoteLockerPlugin extends Plugin {
 		return false;
 	}
 
-	private updateLeafMode(leaf: WorkspaceLeaf | null) {
+	public updateLeafMode(leaf: WorkspaceLeaf | null) {
 		if (!leaf || !(leaf.view instanceof MarkdownView)) return;
 
 		const { view } = leaf;
@@ -486,7 +486,7 @@ export default class NoteLockerPlugin extends Plugin {
 			}
 		} else if (isLocked) {
 			const state = leaf.getViewState();
-			if (state.state?.mode === 'source') {
+			if (this.settings.preventEditInLockedNotes && state.state?.mode === 'source') {
 				leaf.setViewState({
 					...state,
 					state: { ...state.state, mode: 'preview' },
@@ -495,54 +495,75 @@ export default class NoteLockerPlugin extends Plugin {
 		}
 
 		if (isStrictLocked) {
-			const container = view.containerEl;
-			const allActions = container.querySelectorAll('.view-action');
-
-			allActions.forEach(btn => {
-				if (btn instanceof HTMLElement) {
-					const ariaLabel = btn.getAttribute('aria-label') || '';
-					const hasPencilIcon = !!btn.querySelector('.lucide-pencil');
-
-					if (hasPencilIcon || ariaLabel.includes('Edit') || ariaLabel.includes('edit') || ariaLabel.includes('Switch to editing')) {
-						btn.style.display = 'none';
-					}
-				}
-			});
-
-			let lockBtn = container.querySelector('.note-locker-strict-btn');
-			if (!lockBtn) {
-				lockBtn = document.createElement('div');
-				lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
-				lockBtn.setAttribute('aria-label', 'Strictly Locked');
-				lockBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
-
-				lockBtn.addEventListener('click', () => {
-					new StrictUnlockModal(this.app, () => {
-						this.toggleStrictLock(path);
-					}).open();
-				});
-
-				const actionsContainer = container.querySelector('.view-actions');
-				if (actionsContainer) {
-					actionsContainer.prepend(lockBtn);
-				}
-			}
+			this.hideEditButtons(view);
+			this.addStrictLockButton(view, path);
+		} else if (isLocked && this.settings.preventEditInLockedNotes) {
+			this.hideEditButtons(view);
+			this.removeStrictLockButton(view);
 		} else {
-			const container = view.containerEl;
-			const editBtns = container.querySelectorAll('.view-action');
-			editBtns.forEach(btn => {
-				if (btn instanceof HTMLElement) {
-					if (btn.getAttribute('aria-label')?.includes('Edit') ||
-						btn.getAttribute('aria-label')?.includes('edit') ||
-						btn.querySelector('.lucide-pencil')) {
-						btn.style.display = '';
-					}
-				}
-			});
-			const lockBtn = container.querySelector('.note-locker-strict-btn');
-			if (lockBtn) lockBtn.remove();
+			this.showEditButtons(view);
+			this.removeStrictLockButton(view);
 		}
 	}
+
+	private hideEditButtons(view: MarkdownView) {
+		const container = view.containerEl;
+		const allActions = container.querySelectorAll('.view-action');
+
+		allActions.forEach(btn => {
+			if (btn instanceof HTMLElement) {
+				const ariaLabel = btn.getAttribute('aria-label') || '';
+				const hasPencilIcon = !!btn.querySelector('.lucide-pencil');
+
+				if (hasPencilIcon || ariaLabel.includes('Edit') || ariaLabel.includes('edit') || ariaLabel.includes('Switch to editing')) {
+					btn.style.display = 'none';
+				}
+			}
+		});
+	}
+
+	private showEditButtons(view: MarkdownView) {
+		const container = view.containerEl;
+		const editBtns = container.querySelectorAll('.view-action');
+		editBtns.forEach(btn => {
+			if (btn instanceof HTMLElement) {
+				if (btn.getAttribute('aria-label')?.includes('Edit') ||
+					btn.getAttribute('aria-label')?.includes('edit') ||
+					btn.querySelector('.lucide-pencil')) {
+					btn.style.display = '';
+				}
+			}
+		});
+	}
+
+	private addStrictLockButton(view: MarkdownView, path: string) {
+		const container = view.containerEl;
+		let lockBtn = container.querySelector('.note-locker-strict-btn');
+		if (!lockBtn) {
+			lockBtn = document.createElement('div');
+			lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
+			lockBtn.setAttribute('aria-label', 'Strictly Locked');
+			lockBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+
+			lockBtn.addEventListener('click', () => {
+				new StrictUnlockModal(this.app, () => {
+					this.toggleStrictLock(path);
+				}).open();
+			});
+
+			const actionsContainer = container.querySelector('.view-actions');
+			if (actionsContainer) {
+				actionsContainer.prepend(lockBtn);
+			}
+		}
+	}
+
+	private removeStrictLockButton(view: MarkdownView) {
+		const container = view.containerEl;
+		const lockBtn = container.querySelector('.note-locker-strict-btn');
+		if (lockBtn) lockBtn.remove();
+	}
+
 
 	async loadSettings() {
 		const loaded = await this.loadData();

@@ -1,4 +1,4 @@
-import { App, Platform, PluginSettingTab, Setting } from "obsidian";
+import { App, Platform, PluginSettingTab, Setting, MarkdownView } from "obsidian";
 import type NoteLockerPlugin from "./main";
 
 export class NoteLockerSettingTab extends PluginSettingTab {
@@ -39,6 +39,21 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.showNotifications = value;
 					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Prevent editing in locked notes')
+			.setDesc('If enabled, normally locked notes will be read-only. If disabled, you can switch to edit mode.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.preventEditInLockedNotes)
+				.onChange(async (value) => {
+					this.plugin.settings.preventEditInLockedNotes = value;
+					await this.plugin.saveSettings();
+					this.plugin.app.workspace.iterateAllLeaves((leaf) => {
+						if (leaf.view instanceof MarkdownView && leaf.view.file) {
+							this.plugin.updateLeafMode(leaf);
+						}
+					});
 				}));
 
 		const mobileNotificationSetting = new Setting(containerEl)
