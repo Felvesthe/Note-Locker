@@ -58,7 +58,7 @@ export class StatusBarUI {
 			if (isStrictLocked) {
 				setIcon(iconSpan, 'lock');
 				iconSpan.setText('🔓');
-				this.statusBarItemEl.createSpan({ text: ' Strictly Locked' });
+				this.statusBarItemEl.createSpan({ text: ' Strictly locked' });
 				this.statusBarItemEl.setAttribute('aria-label', 'Strictly locked. Click to unlock.');
 			} else {
 				setIcon(iconSpan, isLocked ? 'lock' : 'unlock');

@@ -44,7 +44,7 @@ export default class NoteLockerPlugin extends Plugin {
 		// hotkey
 		this.addCommand({
 			id: 'toggle-note-lock',
-			name: 'Toggle Lock for current note',
+			name: 'Toggle lock for current note',
 			checkCallback: (checking: boolean) => {
 				const file = this.app.workspace.getActiveFile();
 				if (file && file.extension === 'md') {
@@ -65,7 +65,7 @@ export default class NoteLockerPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'switch-to-edit-mode-intercept',
-			name: 'Switch to Edit Mode (Strict Lock Check)',
+			name: 'Switch to edit mode (strict lock check)',
 			hotkeys: [{ modifiers: ["Mod"], key: "e" }],
 			checkCallback: (checking: boolean) => {
 				const file = this.app.workspace.getActiveFile();
@@ -201,7 +201,7 @@ export default class NoteLockerPlugin extends Plugin {
 							new StrictUnlockModal(
 								this.app,
 								() => this.toggleBulkLock(validItems, false),
-								"Strictly Locked Items",
+								"Strictly locked items",
 								"At least one of the selected items is strictly locked."
 							).open();
 						} else {
@@ -223,7 +223,7 @@ export default class NoteLockerPlugin extends Plugin {
 			if (allUnlocked || allLocked) {
 				menu.addItem((item) =>
 					item
-						.setTitle(`Strict Lock ${validItems.length} items`)
+						.setTitle(`Strict lock ${validItems.length} items`)
 						.setIcon("lock")
 						.onClick(() => this.toggleBulkStrictLock(validItems, true))
 				);
@@ -310,14 +310,14 @@ export default class NoteLockerPlugin extends Plugin {
 				if (!isStrictLocked) {
 					menu.addItem((item) =>
 						item
-							.setTitle("Strict Lock")
+							.setTitle("Strict lock")
 							.setIcon("lock")
 							.onClick(() => this.toggleStrictLock(path))
 					);
 				} else {
 					menu.addItem((item) =>
 						item
-							.setTitle("Strict Unlock")
+							.setTitle("Strict unlock")
 							.setIcon("unlock")
 							.onClick(() => {
 								new StrictUnlockModal(this.app, () => {
@@ -417,7 +417,7 @@ export default class NoteLockerPlugin extends Plugin {
 
 		await this.saveSettings();
 
-		new Notice(`${isStrictLocked ? '🔓 Strictly Unlocked' : '🔒 Strictly Locked'}: ${notePath}`);
+		new Notice(`${isStrictLocked ? '🔓 Strictly unlocked' : '🔒 Strictly locked'}: ${notePath}`);
 
 		this.updateAllNoteInstances(notePath);
 		this.statusBarUI.updateStatusBarButton();
@@ -542,7 +542,7 @@ export default class NoteLockerPlugin extends Plugin {
 		if (!lockBtn) {
 			lockBtn = document.createElement('div');
 			lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
-			lockBtn.setAttribute('aria-label', 'Strictly Locked');
+			lockBtn.setAttribute('aria-label', 'Strictly locked');
 			lockBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
 
 			lockBtn.addEventListener('click', () => {

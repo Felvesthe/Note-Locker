@@ -95,7 +95,7 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 		});
 		hotkeyInfo.style.fontStyle = 'italic';
 
-		containerEl.createEl('h3', { text: 'Locked Notes & Folders Statistics' });
+		containerEl.createEl('h3', { text: 'Locked notes & folders statistics' });
 		const lockedNotesCount = this.plugin.settings.lockedNotes.size;
 		const lockedFoldersCount = this.plugin.settings.lockedFolders.size;
 		const strictLockedNotesCount = this.plugin.settings.strictLockedNotes.size;

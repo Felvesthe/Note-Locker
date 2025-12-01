@@ -8,7 +8,7 @@ export class StrictUnlockModal extends Modal {
     constructor(
         app: App,
         onUnlock: () => void,
-        title: string = "Strictly Locked Note",
+        title: string = "Strictly locked note",
         message: string = "This note is strictly locked to prevent accidental editing.") {
         super(app);
         this.onUnlock = onUnlock;
