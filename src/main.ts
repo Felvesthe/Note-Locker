@@ -409,15 +409,26 @@ export default class NoteLockerPlugin extends Plugin {
 	async toggleStrictLock(notePath: string) {
 		const isStrictLocked = this.settings.strictLockedNotes.has(notePath);
 
-		if (isStrictLocked) {
-			this.settings.strictLockedNotes.delete(notePath);
-		} else {
-			this.settings.strictLockedNotes.add(notePath);
-		}
+		isStrictLocked
+			? this.settings.strictLockedNotes.delete(notePath)
+			: this.settings.strictLockedNotes.add(notePath);
 
 		await this.saveSettings();
 
-		new Notice(`${isStrictLocked ? '🔓 Strictly unlocked' : '🔒 Strictly locked'}: ${notePath}`);
+		const file = this.app.vault.getAbstractFileByPath(notePath);
+
+		if (!file) {
+			new Notice("Error: Note not found");
+			return;
+		}
+
+		if (this.settings.showNotifications) {
+			const fileName = file instanceof TFile ? file.basename :
+				notePath.split('/').pop()?.replace(/\..+$/, '') || notePath;
+			const displayName = this.truncateFileName(fileName);
+
+			new Notice(`${isStrictLocked ? '🔓 Strictly unlocked' : '🔒 Strictly locked'}: ${displayName}`);
+		}
 
 		this.updateAllNoteInstances(notePath);
 		this.statusBarUI.updateStatusBarButton();
