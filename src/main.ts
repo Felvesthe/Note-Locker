@@ -8,6 +8,7 @@ import {
 	WorkspaceLeaf,
 	TAbstractFile,
 	TFolder,
+	setIcon,
 } from "obsidian";
 
 import { NoteLockerSettings, DEFAULT_SETTINGS } from "./models/types";
@@ -549,12 +550,13 @@ export default class NoteLockerPlugin extends Plugin {
 
 	private addStrictLockButton(view: MarkdownView, path: string) {
 		const container = view.containerEl;
-		let lockBtn = container.querySelector('.note-locker-strict-btn');
+		let lockBtn = container.querySelector('.note-locker-strict-btn') as HTMLElement;
 		if (!lockBtn) {
 			lockBtn = document.createElement('div');
 			lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
+			lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
 			lockBtn.setAttribute('aria-label', 'Strictly locked');
-			lockBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+			setIcon(lockBtn, 'lock-keyhole');
 
 			lockBtn.addEventListener('click', () => {
 				new StrictUnlockModal(this.app, () => {

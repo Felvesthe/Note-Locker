@@ -56,8 +56,7 @@ export class StatusBarUI {
 			const iconSpan = this.statusBarItemEl.createSpan({ cls: 'locker-icon' });
 
 			if (isStrictLocked) {
-				setIcon(iconSpan, 'lock');
-				iconSpan.setText('🔓');
+				setIcon(iconSpan, 'lock-keyhole');
 				this.statusBarItemEl.createSpan({ text: ' Strictly locked' });
 				this.statusBarItemEl.setAttribute('aria-label', 'Strictly locked. Click to unlock.');
 			} else {

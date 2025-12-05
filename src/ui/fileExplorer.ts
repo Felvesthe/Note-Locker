@@ -141,14 +141,20 @@ export class FileExplorerUI {
 		const path = titleEl.getAttribute('data-path');
 		if (!path) return;
 
-		let shouldHaveIcon = false;
+		let iconName: string | null = null;
 		if (item.classList.contains('nav-file')) {
-			shouldHaveIcon = this.plugin.settings.lockedNotes.has(path) || this.plugin.settings.strictLockedNotes.has(path);
+			if (this.plugin.settings.strictLockedNotes.has(path)) {
+				iconName = 'lock-keyhole';
+			} else if (this.plugin.settings.lockedNotes.has(path)) {
+				iconName = 'lock';
+			}
 		} else if (item.classList.contains('nav-folder')) {
-			shouldHaveIcon = this.plugin.settings.lockedFolders.has(path);
+			if (this.plugin.settings.lockedFolders.has(path)) {
+				iconName = 'lock';
+			}
 		}
 
-		this.updateIconState(titleEl, shouldHaveIcon);
+		this.updateIconState(titleEl, iconName);
 	}
 
 	public updateFileExplorerIcons(): void {
@@ -166,8 +172,13 @@ export class FileExplorerUI {
 			const filePath = titleEl.getAttribute('data-path');
 			if (!filePath) return;
 
-			const shouldHaveIcon = this.plugin.settings.lockedNotes.has(filePath) || this.plugin.settings.strictLockedNotes.has(filePath);
-			this.updateIconState(titleEl, shouldHaveIcon);
+			let iconName: string | null = null;
+			if (this.plugin.settings.strictLockedNotes.has(filePath)) {
+				iconName = 'lock-keyhole';
+			} else if (this.plugin.settings.lockedNotes.has(filePath)) {
+				iconName = 'lock';
+			}
+			this.updateIconState(titleEl, iconName);
 		});
 
 		// Handle folders
@@ -179,20 +190,25 @@ export class FileExplorerUI {
 			const folderPath = titleEl.getAttribute('data-path');
 			if (!folderPath) return;
 
-			const shouldHaveIcon = this.plugin.settings.lockedFolders.has(folderPath);
-			this.updateIconState(titleEl, shouldHaveIcon);
+			let iconName: string | null = null;
+			if (this.plugin.settings.lockedFolders.has(folderPath)) {
+				iconName = 'lock';
+			}
+			this.updateIconState(titleEl, iconName);
 		});
 	}
 
-	private updateIconState(targetEl: Element, shouldHaveIcon: boolean): void {
+	private updateIconState(targetEl: Element, iconName: string | null): void {
 		const existingIcon = targetEl.querySelector('.note-locker-icon');
 
-		if (shouldHaveIcon) {
+		if (iconName) {
 			if (!existingIcon) {
 				const iconEl = document.createElement('div');
 				iconEl.addClass('note-locker-icon');
-				setIcon(iconEl, 'lock');
+				setIcon(iconEl, iconName);
 				targetEl.appendChild(iconEl);
+			} else {
+				setIcon(existingIcon as HTMLElement, iconName);
 			}
 		} else {
 			if (existingIcon) {
