@@ -114,7 +114,7 @@ export default class NoteLockerPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {
-				this.updateLeafMode(leaf);
+				this.updateLeafMode(leaf, true);
 				this.statusBarUI.updateStatusBarButton();
 			})
 		);
@@ -148,6 +148,7 @@ export default class NoteLockerPlugin extends Plugin {
 			this.app.workspace.on("file-open", () => {
 				this.statusBarUI.updateStatusBarButton();
 				this.fileExplorerUI.updateFileExplorerIcons();
+				this.updateLeafMode(this.app.workspace.getLeaf(false), true);
 			})
 		);
 
@@ -162,7 +163,7 @@ export default class NoteLockerPlugin extends Plugin {
 	private initializeExistingLeaves() {
 		this.app.workspace
 			.getLeavesOfType("markdown")
-			.forEach((leaf) => this.updateLeafMode(leaf));
+			.forEach((leaf) => this.updateLeafMode(leaf, true));
 	}
 
 	private addBulkLockMenuItem(menu: Menu, files: TAbstractFile[]) {
@@ -471,7 +472,7 @@ export default class NoteLockerPlugin extends Plugin {
 		return false;
 	}
 
-	public updateLeafMode(leaf: WorkspaceLeaf | null) {
+	public updateLeafMode(leaf: WorkspaceLeaf | null, fromNavigation: boolean = false) {
 		if (!leaf || !(leaf.view instanceof MarkdownView)) return;
 
 		const { view } = leaf;
@@ -488,17 +489,11 @@ export default class NoteLockerPlugin extends Plugin {
 					...state,
 					state: { ...state.state, mode: 'preview' },
 				});
-
-				if (this.app.workspace.activeLeaf === leaf) {
-					new StrictUnlockModal(this.app, () => {
-						this.toggleStrictLock(path);
-					}).open();
-				}
 				return;
 			}
 		} else if (isLocked) {
 			const state = leaf.getViewState();
-			if (this.settings.preventEditInLockedNotes && state.state?.mode === 'source') {
+			if ((fromNavigation || this.settings.preventEditInLockedNotes) && state.state?.mode === 'source') {
 				leaf.setViewState({
 					...state,
 					state: { ...state.state, mode: 'preview' },
@@ -554,7 +549,6 @@ export default class NoteLockerPlugin extends Plugin {
 		if (!lockBtn) {
 			lockBtn = document.createElement('div');
 			lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
-			lockBtn.addClass('view-action', 'clickable-icon', 'note-locker-strict-btn');
 			lockBtn.setAttribute('aria-label', 'Strictly locked');
 			setIcon(lockBtn, 'lock-keyhole');
 
@@ -576,7 +570,6 @@ export default class NoteLockerPlugin extends Plugin {
 		const lockBtn = container.querySelector('.note-locker-strict-btn');
 		if (lockBtn) lockBtn.remove();
 	}
-
 
 	async loadSettings() {
 		const loaded = await this.loadData();
