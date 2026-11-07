@@ -8,6 +8,7 @@ export interface NoteLockerSettings {
 	showStatusBarButton: boolean;
 	showNotifications: boolean;
 	preventEditInLockedNotes: boolean;
+	openLockedNotesInPreview: boolean;
 }
 
 export const DEFAULT_SETTINGS: NoteLockerSettings = {
@@ -19,5 +20,6 @@ export const DEFAULT_SETTINGS: NoteLockerSettings = {
 	showFileExplorerIcons: true,
 	showStatusBarButton: true,
 	showNotifications: true,
-	preventEditInLockedNotes: false
+	preventEditInLockedNotes: false,
+	openLockedNotesInPreview: true
 };

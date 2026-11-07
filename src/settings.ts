@@ -56,6 +56,21 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 					});
 				}));
 
+		new Setting(containerEl)
+			.setName('Open locked notes in preview mode')
+			.setDesc('If enabled, normally locked notes will open in reading view. You can still switch to edit mode.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.openLockedNotesInPreview)
+				.onChange(async (value) => {
+					this.plugin.settings.openLockedNotesInPreview = value;
+					await this.plugin.saveSettings();
+					this.plugin.app.workspace.iterateAllLeaves((leaf) => {
+						if (leaf.view instanceof MarkdownView && leaf.view.file) {
+							this.plugin.updateLeafMode(leaf);
+						}
+					});
+				}));
+
 		const mobileNotificationSetting = new Setting(containerEl)
 			.setName('Mobile notification max length')
 			.setDesc('Maximum length of file names in notifications on mobile devices')

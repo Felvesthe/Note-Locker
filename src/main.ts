@@ -493,7 +493,7 @@ export default class NoteLockerPlugin extends Plugin {
 			}
 		} else if (isLocked) {
 			const state = leaf.getViewState();
-			if ((fromNavigation || this.settings.preventEditInLockedNotes) && state.state?.mode === 'source') {
+			if (((fromNavigation && this.settings.openLockedNotesInPreview) || this.settings.preventEditInLockedNotes) && state.state?.mode === 'source') {
 				leaf.setViewState({
 					...state,
 					state: { ...state.state, mode: 'preview' },
