@@ -11,6 +11,7 @@ import { DATA_VERSION, type NoteLockerSettings } from './types';
 import { registerContextMenus } from './ui/contextMenus';
 import { ExplorerIcons } from './ui/explorerIcons';
 import { HeaderButtons } from './ui/headerButton';
+import { NoteLockerSettingTab } from './ui/settingsTab';
 import { StatusBar } from './ui/statusBar';
 import { registerVaultEvents } from './vaultEvents';
 
@@ -34,6 +35,7 @@ export default class NoteLockerPlugin extends Plugin {
 		registerVaultEvents(this);
 		registerContextMenus(this);
 		registerCommands(this);
+		this.addSettingTab(new NoteLockerSettingTab(this.app, this));
 
 		this.app.workspace.onLayoutReady(() => {
 			this.viewModes.start();
@@ -54,6 +56,12 @@ export default class NoteLockerPlugin extends Plugin {
 		await this.loadState();
 		this.applySettings();
 		this.actions.notifyChanged();
+	}
+
+	async updateSettings(changes: Partial<NoteLockerSettings>): Promise<void> {
+		this.settings = { ...this.settings, ...changes };
+		this.applySettings();
+		await this.persist();
 	}
 
 	applySettings(): void {

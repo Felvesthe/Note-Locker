@@ -52,6 +52,10 @@ export class LockActions extends Events {
 		}
 	}
 
+	async forget(target: LockTarget): Promise<void> {
+		if (this.plugin.locks.setLevel(target, null)) await this.commit();
+	}
+
 	finishEditOnce(leaf: WorkspaceLeaf): void {
 		if (!this.plugin.sessions.end(leaf)) return;
 		this.notifyChanged();

@@ -2,7 +2,7 @@
 	"id": "note-locker",
 	"name": "Note Locker",
 	"version": "1.3.1",
-	"minAppVersion": "1.5.7",
+	"minAppVersion": "1.11.0",
 	"description": "Lock notes to open in preview mode by default.",
 	"author": "Felvesthe",
 	"authorUrl": "https://github.com/Felvesthe",

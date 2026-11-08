@@ -42,3 +42,15 @@
 	width: var(--icon-xs);
 	height: var(--icon-xs);
 }
+
+.note-locker-missing .setting-item-name {
+	color: var(--text-muted);
+}
+
+.note-locker-filters .setting-item-info {
+	display: none;
+}
+
+.note-locker-filters .setting-item-control {
+	justify-content: space-between;
+}
