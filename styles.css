@@ -1,0 +1,9 @@
+.note-locker-strict .metadata-add-button,
+.note-locker-strict .metadata-property-value .multi-select-pill-remove-button {
+	display: none;
+}
+
+.note-locker-strict .metadata-property-icon,
+.note-locker-strict .task-list-item-checkbox {
+	pointer-events: none;
+}
