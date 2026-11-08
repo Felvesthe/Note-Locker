@@ -76,4 +76,16 @@ export function registerCommands(plugin: NoteLockerPlugin): void {
 			return true;
 		},
 	});
+
+	plugin.addCommand({
+		id: 'finish-editing-current-note',
+		name: 'Finish editing current note',
+		checkCallback: (checking) => {
+			const note = activeNote();
+			const { leaf } = note?.view ?? {};
+			if (!note?.lock || !leaf || !plugin.sessions.get(leaf, note.target.path)) return false;
+			if (!checking) plugin.actions.finishEditOnce(leaf);
+			return true;
+		},
+	});
 }

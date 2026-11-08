@@ -1,4 +1,4 @@
-import { debounce, MarkdownView, type MarkdownViewModeType, type WorkspaceLeaf } from 'obsidian';
+import { debounce, MarkdownView, TFile, type MarkdownViewModeType, type WorkspaceLeaf } from 'obsidian';
 import { rebasePath } from '../core/paths';
 import { LOCKS_CHANGED } from '../lockActions';
 import type NoteLockerPlugin from '../main';
@@ -7,6 +7,7 @@ import { markStrictView } from './readingViewGuard';
 
 const MODE_SWITCH_ATTEMPTS = 20;
 const MODE_SWITCH_RETRY_MS = 50;
+const JUST_CREATED_MS = 10_000;
 
 interface LeafSnapshot {
 	path: string;
@@ -28,7 +29,11 @@ export class ViewModeController {
 		this.plugin.registerEvent(workspace.on('layout-change', this.requestSync));
 		this.plugin.registerEvent(workspace.on('active-leaf-change', this.requestSync));
 		this.plugin.registerEvent(this.plugin.actions.on(LOCKS_CHANGED, this.requestSync));
-		this.plugin.registerEvent(vault.on('create', (file) => this.plugin.sessions.markCreated(file.path)));
+		this.plugin.registerEvent(
+			vault.on('create', (file) => {
+				if (file instanceof TFile && isJustCreated(file)) this.plugin.sessions.markCreated(file.path);
+			}),
+		);
 		this.requestSync();
 	}
 
@@ -65,6 +70,9 @@ export class ViewModeController {
 			mode = this.handleOpened(leaf, path, mode, lock);
 		} else if (previous.mode === 'preview' && mode === 'source') {
 			mode = this.handleSwitchedToEditing(leaf, path, lock);
+		} else if (previous.mode === 'source' && mode === 'preview' && isEditingOnce()) {
+			this.plugin.sessions.end(leaf);
+			this.plugin.actions.notifyChanged();
 		} else if (lock?.level === 'strict' && mode === 'source' && !isEditingOnce()) {
 			mode = this.switchMode(leaf, path, 'preview');
 		}
@@ -153,4 +161,8 @@ export class ViewModeController {
 			.map((leaf) => leaf.view)
 			.filter((view): view is MarkdownView => view instanceof MarkdownView);
 	}
+}
+
+function isJustCreated(file: TFile): boolean {
+	return Date.now() - file.stat.ctime < JUST_CREATED_MS;
 }

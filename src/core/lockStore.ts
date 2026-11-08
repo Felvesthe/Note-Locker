@@ -38,6 +38,11 @@ export class LockStore {
 		return effective;
 	}
 
+	getInheritedLock(target: LockTarget): EffectiveLock | null {
+		const [parentFolder] = parentFoldersOf(target.path);
+		return parentFolder ? this.getEffectiveLock({ kind: 'folder', path: parentFolder }) : null;
+	}
+
 	setLevel(target: LockTarget, level: LockLevel | null): boolean {
 		const levels = this.levels[target.kind];
 		if ((levels.get(target.path) ?? null) === level) return false;
