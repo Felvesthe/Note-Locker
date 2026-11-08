@@ -1,0 +1,67 @@
+.note-locker-strict .metadata-add-button,
+.note-locker-strict .metadata-property-value .multi-select-pill-remove-button {
+	display: none;
+}
+
+.note-locker-strict .metadata-property-icon,
+.note-locker-strict .task-list-item-checkbox {
+	pointer-events: none;
+}
+
+.note-locker-explorer-icon {
+	display: flex;
+	align-items: center;
+	align-self: center;
+	flex-shrink: 0;
+	margin-inline-start: auto;
+	padding-inline-start: var(--size-4-1);
+	color: var(--text-accent);
+	opacity: 0.8;
+}
+
+.note-locker-explorer-icon svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
+}
+
+.note-locker-header-button:not([data-level='none']) {
+	color: var(--text-accent);
+}
+
+.note-locker-status {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+}
+
+.note-locker-status-icon {
+	display: flex;
+}
+
+.note-locker-status-icon svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
+}
+
+.note-locker-missing .setting-item-name {
+	color: var(--text-muted);
+}
+
+.note-locker-filters .setting-item-info {
+	display: none;
+}
+
+.note-locker-filters .setting-item-control {
+	justify-content: space-between;
+}
+
+.note-locker-notice {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.note-locker-notice-icon {
+	display: flex;
+	flex-shrink: 0;
+}

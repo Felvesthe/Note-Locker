@@ -1,88 +1,70 @@
-import { setIcon } from "obsidian";
-import type NoteLockerPlugin from "../main";
-import { StrictUnlockModal } from "./strictUnlockModal";
+import { debounce, MarkdownView, Menu, Platform, setIcon, setTooltip } from 'obsidian';
+import { LOCKS_CHANGED } from '../lockActions';
+import type NoteLockerPlugin from '../main';
+import { addNoteMenuItems } from './lockMenu';
+import { describeNote } from './noteState';
 
-export class StatusBarUI {
-	private plugin: NoteLockerPlugin;
-	public statusBarItemEl: HTMLElement | null = null;
+export class StatusBar {
+	private itemEl: HTMLElement | null = null;
+	private readonly requestRefresh = debounce(() => this.refresh(), 0, true);
 
-	constructor(plugin: NoteLockerPlugin) {
-		this.plugin = plugin;
+	constructor(private readonly plugin: NoteLockerPlugin) {}
+
+	start(): void {
+		const { workspace } = this.plugin.app;
+		this.plugin.registerEvent(workspace.on('file-open', this.requestRefresh));
+		this.plugin.registerEvent(workspace.on('active-leaf-change', this.requestRefresh));
+		this.plugin.registerEvent(this.plugin.actions.on(LOCKS_CHANGED, this.requestRefresh));
+		this.refresh();
 	}
 
-	public createStatusBarItem(): void {
-		if (!this.plugin.settings.showStatusBarButton) return;
+	stop(): void {
+		this.requestRefresh.cancel();
+		this.itemEl?.detach();
+		this.itemEl = null;
+	}
 
-		this.statusBarItemEl = this.plugin.addStatusBarItem();
-		if (this.statusBarItemEl) {
-			this.statusBarItemEl.addClass('note-locker-status');
-			this.statusBarItemEl.addEventListener('click', () => {
-				const activeFile = this.plugin.app.workspace.getActiveFile();
-				if (activeFile) {
-					if (this.plugin.settings.strictLockedNotes.has(activeFile.path)) {
-						new StrictUnlockModal(this.plugin.app, () => {
-							this.plugin.toggleStrictLock(activeFile.path);
-						}).open();
-					} else {
-						this.plugin.toggleNoteLock(activeFile.path);
-					}
-				}
-			});
-
-			this.updateStatusBarButton();
+	refresh(): void {
+		if (Platform.isMobile || !this.plugin.settings.showStatusBar) {
+			this.stop();
+			return;
 		}
+
+		const itemEl = this.itemEl ?? this.createItem();
+		itemEl.empty();
+
+		const view = this.activeMarkdownView();
+		const path = view?.file?.path;
+		itemEl.toggle(path !== undefined);
+		if (!view || !path) return;
+
+		const state = describeNote(this.plugin, path, view.leaf);
+		setIcon(itemEl.createSpan({ cls: 'note-locker-status-icon' }), state.icon);
+		itemEl.createSpan({ text: state.label });
+		itemEl.dataset.level = state.level ?? 'none';
+		setTooltip(itemEl, state.tooltip, { placement: 'top' });
 	}
 
-	public updateStatusBarButton(): void {
-		if (!this.plugin.settings.showStatusBarButton || !this.statusBarItemEl) return;
-
-		const isLocked = this.isCurrentNoteActive();
-		this.statusBarItemEl.empty();
-
-		const style = document.createElement('style');
-		style.textContent = `
-			.note-locker-status .locker-icon {
-				margin-right: 6px;
-			}
-		`;
-		document.head.appendChild(style);
-
-		if (this.plugin.app.workspace.getActiveFile()) {
-			const activeFile = this.plugin.app.workspace.getActiveFile();
-			const path = activeFile ? activeFile.path : '';
-			const isStrictLocked = this.plugin.settings.strictLockedNotes.has(path);
-			const isLocked = this.isCurrentNoteActive();
-
-			const iconSpan = this.statusBarItemEl.createSpan({ cls: 'locker-icon' });
-
-			if (isStrictLocked) {
-				setIcon(iconSpan, 'lock-keyhole');
-				this.statusBarItemEl.createSpan({ text: ' Strictly locked' });
-				this.statusBarItemEl.setAttribute('aria-label', 'Strictly locked. Click to unlock.');
-			} else {
-				setIcon(iconSpan, isLocked ? 'lock' : 'unlock');
-				this.statusBarItemEl.createSpan({
-					text: isLocked ? ' Locked' : ' Unlocked'
-				});
-				this.statusBarItemEl.setAttribute('aria-label',
-					isLocked ? 'Click to unlock this note' : 'Click to lock this note');
-			}
-
-			this.statusBarItemEl.style.cursor = 'pointer';
-		} else {
-			this.statusBarItemEl.style.cursor = 'default';
-		}
+	private createItem(): HTMLElement {
+		const itemEl = this.plugin.addStatusBarItem();
+		itemEl.addClass('note-locker-status', 'mod-clickable');
+		this.plugin.registerDomEvent(itemEl, 'click', (event) => this.openMenu(event));
+		this.itemEl = itemEl;
+		return itemEl;
 	}
 
-	private isCurrentNoteActive(): boolean {
-		const activeFile = this.plugin.app.workspace.getActiveFile();
-		return activeFile ? this.plugin.settings.lockedNotes.has(activeFile.path) : false;
+	private openMenu(event: MouseEvent): void {
+		const view = this.activeMarkdownView();
+		const path = view?.file?.path;
+		if (!view || !path) return;
+
+		const menu = new Menu();
+		addNoteMenuItems(menu, this.plugin, path, view.leaf);
+		menu.showAtMouseEvent(event);
 	}
 
-	public removeStatusBarItem(): void {
-		if (this.statusBarItemEl) {
-			this.statusBarItemEl.detach();
-			this.statusBarItemEl = null;
-		}
+	private activeMarkdownView(): MarkdownView | null {
+		const view = this.plugin.app.workspace.getMostRecentLeaf()?.view;
+		return view instanceof MarkdownView ? view : null;
 	}
 }

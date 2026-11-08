@@ -1,9 +1,9 @@
 {
 	"id": "note-locker",
 	"name": "Note Locker",
-	"version": "1.3.1",
-	"minAppVersion": "0.15.0",
-	"description": "Lock notes to open in preview mode by default.",
+	"version": "2.0.0",
+	"minAppVersion": "1.11.0",
+	"description": "Lock notes and folders against accidental edits.",
 	"author": "Felvesthe",
 	"authorUrl": "https://github.com/Felvesthe",
 	"isDesktopOnly": false
