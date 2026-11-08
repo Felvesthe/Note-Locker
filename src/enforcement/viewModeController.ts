@@ -3,6 +3,7 @@ import { rebasePath } from '../core/paths';
 import { LOCKS_CHANGED } from '../lockActions';
 import type NoteLockerPlugin from '../main';
 import type { EffectiveLock } from '../types';
+import { LOCK_ICONS } from '../ui/noteState';
 import { markStrictView } from './readingViewGuard';
 
 const MODE_SWITCH_ATTEMPTS = 20;
@@ -92,7 +93,10 @@ export class ViewModeController {
 
 		if (this.plugin.sessions.consumeNewNote(path)) {
 			this.plugin.sessions.start(leaf, path, 'new-note');
-			this.plugin.actions.notify(`New note in locked folder "${lock.source.path}" - editable until you leave it`);
+			this.plugin.actions.notify(
+				`New note in locked folder "${lock.source.path}" - editable until you leave it`,
+				LOCK_ICONS.editingOnce,
+			);
 			return mode;
 		}
 

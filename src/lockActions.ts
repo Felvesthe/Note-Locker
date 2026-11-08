@@ -1,10 +1,11 @@
-import { Events, MarkdownView, Notice, type MarkdownViewModeType, type WorkspaceLeaf } from 'obsidian';
+import { Events, MarkdownView, Notice, setIcon, type MarkdownViewModeType, type WorkspaceLeaf } from 'obsidian';
 import { isAtLeast } from './core/lockLevels';
 import { fileNameOf } from './core/paths';
 import type { EditOnceReason } from './enforcement/editOnceSessions';
 import type NoteLockerPlugin from './main';
 import type { EffectiveLock, LockLevel, LockTarget } from './types';
 import { ConfirmModal } from './ui/confirmModal';
+import { iconForLevel, LOCK_ICONS } from './ui/noteState';
 
 const MAX_NOTICE_NAME_LENGTH = 40;
 
@@ -103,8 +104,15 @@ export class LockActions extends Events {
 		this.trigger(LOCKS_CHANGED);
 	}
 
-	notify(message: string): void {
-		if (this.plugin.settings.showNotifications) new Notice(message);
+	notify(message: string, icon: string): void {
+		if (!this.plugin.settings.showNotifications) return;
+
+		const content = createFragment((fragment) => {
+			const row = fragment.createDiv({ cls: 'note-locker-notice' });
+			setIcon(row.createSpan({ cls: 'note-locker-notice-icon' }), icon);
+			row.createSpan({ text: message });
+		});
+		new Notice(content);
 	}
 
 	private confirmStrengthening(targets: LockTarget[]): void {
@@ -150,7 +158,7 @@ export class LockActions extends Events {
 		if (changed.length === 0) return;
 
 		await this.commit();
-		this.notify(this.describeChange(changed, level));
+		this.notify(this.describeChange(changed, level), level ? iconForLevel(level) : LOCK_ICONS.unlocked);
 	}
 
 	private describeChange(targets: LockTarget[], level: LockLevel | null): string {

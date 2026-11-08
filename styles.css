@@ -54,3 +54,14 @@
 .note-locker-filters .setting-item-control {
 	justify-content: space-between;
 }
+
+.note-locker-notice {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.note-locker-notice-icon {
+	display: flex;
+	flex-shrink: 0;
+}
