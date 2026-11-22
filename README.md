@@ -39,6 +39,7 @@ New notes created in a locked folder are an exception: the first time you open a
 ## Where to find it
 
 - **File explorer:** right-click a note or folder. With several items selected, you can lock or unlock all of them at once. Locked items show a lock icon.
+- **Notebook Navigator:** if you use the [Notebook Navigator](https://github.com/johansan/notebook-navigator) plugin, its right-click menu for notes, folders and several selected notes has the same options as the file explorer. Lock icons in Notebook Navigator are optional, see below.
 - **Note header:** the lock button next to the reading and editing toggle shows the current state of the note and opens the lock menu. This is also the easiest way to lock notes on mobile.
 - **Note menu and editor menu:** the "More options" menu of a note and the right-click menu in the editor have the same options.
 - **Status bar** (desktop only): shows whether the current note is locked and opens the same menu.
@@ -54,6 +55,8 @@ New notes created in a locked folder are an exception: the first time you open a
 ## Settings
 
 In **Settings -> Note Locker** you can turn the file explorer icons, the note header button, the status bar item and notifications on or off.
+
+**Show icons in Notebook Navigator** is experimental and off by default. Notebook Navigator doesn't offer a way for other plugins to add icons to its lists, so Note Locker places them based on how Notebook Navigator currently draws them. After a Notebook Navigator update the icons may be misplaced or stop showing up. The right-click menu doesn't depend on this setting and uses Notebook Navigator's official interface for plugins.
 
 The settings also list everything that is locked, sorted by name. You can filter the list by type or by name, change the lock of each item and unlock it. Items whose note or folder no longer exists in the vault are marked as not found and can be removed from the list. Note Locker doesn't remove them on its own, because with sync a file can disappear briefly and come back.
 

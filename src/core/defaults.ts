@@ -2,6 +2,7 @@ import { DATA_VERSION, type NoteLockerSettings, type PluginData } from '../types
 
 export const DEFAULT_SETTINGS: NoteLockerSettings = {
 	showExplorerIcons: true,
+	showNotebookNavigatorIcons: false,
 	showHeaderButton: true,
 	showStatusBar: true,
 	showNotifications: true,

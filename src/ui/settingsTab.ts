@@ -68,6 +68,11 @@ export class NoteLockerSettingTab extends PluginSettingTab {
 			});
 
 		addToggle('Show icons in file explorer', 'Show a lock icon next to locked notes and folders.', 'showExplorerIcons');
+		addToggle(
+			'Show icons in Notebook Navigator',
+			'Experimental. Show a lock icon next to locked notes and folders in Notebook Navigator. It depends on how Notebook Navigator draws its lists, so it may stop working after Notebook Navigator updates.',
+			'showNotebookNavigatorIcons',
+		);
 		addToggle('Show button in note header', 'Show a lock button next to the reading and editing toggle.', 'showHeaderButton');
 		if (!Platform.isMobile) {
 			addToggle('Show status bar item', 'Show the lock state of the current note in the status bar.', 'showStatusBar');

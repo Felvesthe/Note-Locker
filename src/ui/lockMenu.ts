@@ -1,8 +1,12 @@
-import type { Menu, WorkspaceLeaf } from 'obsidian';
+import type { MenuItem, WorkspaceLeaf } from 'obsidian';
 import { fileNameOf } from '../core/paths';
 import type NoteLockerPlugin from '../main';
 import type { LockLevel, LockTarget } from '../types';
 import { iconForLevel, LOCK_ICONS } from './noteState';
+
+export interface MenuLike {
+	addItem(callback: (item: MenuItem) => void): unknown;
+}
 
 interface MenuAction {
 	title: string;
@@ -11,7 +15,7 @@ interface MenuAction {
 }
 
 export function addNoteMenuItems(
-	menu: Menu,
+	menu: MenuLike,
 	plugin: NoteLockerPlugin,
 	path: string,
 	leaf: WorkspaceLeaf | null,
@@ -50,7 +54,7 @@ export function addNoteMenuItems(
 	addActions(menu, actions);
 }
 
-export function addFolderMenuItems(menu: Menu, plugin: NoteLockerPlugin, path: string): void {
+export function addFolderMenuItems(menu: MenuLike, plugin: NoteLockerPlugin, path: string): void {
 	const target: LockTarget = { kind: 'folder', path };
 	const lock = plugin.locks.getEffectiveLock(target);
 	const inheritedFrom = lock && lock.source.path !== path ? lock : null;
@@ -71,7 +75,7 @@ export function addFolderMenuItems(menu: Menu, plugin: NoteLockerPlugin, path: s
 	addActions(menu, levelActions(plugin, target, ' folder'));
 }
 
-export function addBulkMenuItems(menu: Menu, plugin: NoteLockerPlugin, targets: LockTarget[]): void {
+export function addBulkMenuItems(menu: MenuLike, plugin: NoteLockerPlugin, targets: LockTarget[]): void {
 	const ownLevels = targets.map((target) => plugin.locks.getOwnLevel(target));
 	const count = `${targets.length} items`;
 	const actions: MenuAction[] = [];
@@ -122,7 +126,7 @@ function setLevelAction(
 	};
 }
 
-function addActions(menu: Menu, actions: MenuAction[]): void {
+function addActions(menu: MenuLike, actions: MenuAction[]): void {
 	for (const action of actions) {
 		menu.addItem((item) => item.setTitle(action.title).setIcon(action.icon).onClick(action.run));
 	}

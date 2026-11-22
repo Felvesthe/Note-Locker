@@ -65,3 +65,37 @@
 	display: flex;
 	flex-shrink: 0;
 }
+
+.nn-file-content > .note-locker-explorer-icon {
+	position: absolute;
+	top: var(--nn-file-padding-vertical, 8px);
+	inset-inline-end: var(--nn-file-item-padding-horizontal, 12px);
+	box-sizing: border-box;
+	height: var(--nn-file-title-line-height, 20px);
+	margin: 0;
+	padding: 0 3px;
+	border-radius: var(--radius-s);
+}
+
+.nn-file-content:has(.nn-file-thumbnail) > .note-locker-explorer-icon {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	opacity: 1;
+	box-shadow: var(--shadow-s);
+}
+
+.nn-file-content:has(> .note-locker-explorer-icon):not(:has(.nn-file-thumbnail)) .nn-file-name {
+	padding-inline-end: calc(var(--icon-xs) + var(--size-4-3));
+}
+
+.nn-navitem-content > .note-locker-explorer-icon {
+	margin-inline-start: 0;
+	padding-inline-start: 0;
+}
+
+.nn-navitem-content:has(> .note-locker-explorer-icon) > .nn-navitem-count {
+	order: 1;
+	box-sizing: border-box;
+	min-width: calc(2ch + 12px);
+	justify-content: flex-end;
+}

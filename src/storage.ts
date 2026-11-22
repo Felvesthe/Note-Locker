@@ -44,6 +44,10 @@ function sanitizeData(raw: unknown): PluginData {
 		folders: sanitizeLockMap(raw.folders),
 		settings: {
 			showExplorerIcons: booleanOr(settings.showExplorerIcons, DEFAULT_SETTINGS.showExplorerIcons),
+			showNotebookNavigatorIcons: booleanOr(
+				settings.showNotebookNavigatorIcons,
+				DEFAULT_SETTINGS.showNotebookNavigatorIcons,
+			),
 			showHeaderButton: booleanOr(settings.showHeaderButton, DEFAULT_SETTINGS.showHeaderButton),
 			showStatusBar: booleanOr(settings.showStatusBar, DEFAULT_SETTINGS.showStatusBar),
 			showNotifications: booleanOr(settings.showNotifications, DEFAULT_SETTINGS.showNotifications),

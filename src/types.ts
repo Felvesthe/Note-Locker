@@ -21,6 +21,7 @@ export type LockMap = Record<string, LockLevel>;
 
 export interface NoteLockerSettings {
 	showExplorerIcons: boolean;
+	showNotebookNavigatorIcons: boolean;
 	showHeaderButton: boolean;
 	showStatusBar: boolean;
 	showNotifications: boolean;

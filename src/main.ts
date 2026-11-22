@@ -5,6 +5,7 @@ import { EditOnceSessions } from './enforcement/editOnceSessions';
 import { EditorGuard } from './enforcement/editorGuard';
 import { registerReadingViewGuard } from './enforcement/readingViewGuard';
 import { ViewModeController } from './enforcement/viewModeController';
+import { NotebookNavigatorMenus } from './integrations/notebookNavigator';
 import { LockActions } from './lockActions';
 import { loadPluginData, savePluginData } from './storage';
 import { DATA_VERSION, type NoteLockerSettings } from './types';
@@ -25,6 +26,7 @@ export default class NoteLockerPlugin extends Plugin {
 	private readonly headerButtons = new HeaderButtons(this);
 	private readonly statusBar = new StatusBar(this);
 	private readonly explorerIcons = new ExplorerIcons(this);
+	private readonly notebookNavigatorMenus = new NotebookNavigatorMenus(this);
 	private pendingSave: Promise<void> = Promise.resolve();
 
 	async onload() {
@@ -42,6 +44,7 @@ export default class NoteLockerPlugin extends Plugin {
 			this.headerButtons.start();
 			this.statusBar.start();
 			this.explorerIcons.start();
+			this.notebookNavigatorMenus.start();
 		});
 	}
 
@@ -50,6 +53,7 @@ export default class NoteLockerPlugin extends Plugin {
 		this.headerButtons.stop();
 		this.statusBar.stop();
 		this.explorerIcons.stop();
+		this.notebookNavigatorMenus.stop();
 	}
 
 	async onExternalSettingsChange() {
